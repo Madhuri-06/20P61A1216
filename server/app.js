@@ -5,8 +5,9 @@ const cors = require("cors");
 
 app.use(cors());
 let numbersStore = [];
+let WINDOW_SIZE = 10;
 const updateStore = (newNumbers) => {
-    console.log(newNumbers);
+  console.log(newNumbers);
   newNumbers.forEach((number) => {
     if (!numbersStore.includes(number)) {
       if (numbersStore.length >= WINDOW_SIZE) {
@@ -67,54 +68,85 @@ app.get("/auth", (req, res) => {
     });
 });
 
-app.get("/numbers/:id", async(req, res) => {
-    const authorization = await fetch("http://localhost:9876/auth")
-        .then((response) => response.json())
-        .then((data) => {
-            return data.access_token;
-        });
-    console.log(authorization);
+app.get("/numbers/:id", async (req, res) => {
+  const authorization = await fetch("http://localhost:9876/auth")
+    .then((response) => response.json())
+    .then((data) => {
+      return data.access_token;
+    });
+  console.log(authorization);
   let option;
+  console.log(req.params.id);
   if (req.params.id === "e") {
     option = "even";
   } else if (req.params.id === "p") {
-    option = "prime";
+    option = "primes";
   } else if (req.params.id === "f") {
-    option = "fibonacci";
+    option = "fibo";
   } else if (req.params.id === "r") {
-    option = "random";
+    option = "rand";
   } else {
     option = "invalid";
-    }
-    try{
-  fetch(`http://20.244.56.144/test/${option}`, {
-    method: "GET",
-    headers: {
-        "Content-Type": "application/json",
-        "Authorization": authorization
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
+  }
+  console.log(option);
+  try {
+    fetch(`http://20.244.56.144/test/${option}`, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + authorization,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
         const windowPrevState = [...numbersStore];
-        console.log(data)
+        console.log(data);
         const newNumbers = data.numbers;
         console.log(newNumbers);
-      updateStore(newNumbers);
-      const windowCurrState = [...numbersStore];
-      const average = calculateAverage(numbersStore);
-      res.send({
-        windowPrevState,
-        windowCurrState,
-        newNumbers,
-        average,
+        updateStore(newNumbers);
+        const windowCurrState = [...numbersStore];
+        const average = calculateAverage(numbersStore);
+        res.send({
+          windowPrevState,
+          windowCurrState,
+          newNumbers,
+          average,
+        });
       });
-    });
-    }
-    catch(err){
-        console.log("err");
-    }
+  } catch (err) {
+    console.log("err");
+  }
 });
+
+app.get(
+  "/products/:companyName/:category?top=:top&minPrice=:min&maxPrice=:max",
+  (req, res) => {
+    const { companyName, category, top, min, max } = req.params;
+    console.log(companyName, category, top, min, max);
+    const authorization = fetch("http://localhost:9876/auth")
+      .then((response) => response.json())
+      .then((data) => {
+        return data.access_token;
+      });
+    try {
+      fetch(
+        `http://9876/test/companies/${companyName}/categories/${category}?top=${top}&minPrice=${min}&maxPrice=${max}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer " + authorization,
+          },
+        }
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          res.send(data);
+        });
+    } catch (err) {
+      console.log("err");
+    }
+  }
+);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
