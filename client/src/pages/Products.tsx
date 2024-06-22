@@ -61,8 +61,16 @@ const Products = () => {
             .catch(err => console.log(err));
     }
 
+    const register = () => {
+        fetch('http://localhost:9876/register')
+            .then(res => res.json())
+            .then(data => console.log(data))
+            .catch(err => console.log(err));
+    }
+
     useEffect(() => {
         // /products/:companyName/:category?top=:top&minPrice=:min&maxPrice=:max"
+        register();
         console.log(`http://localhost:9876/products/${companies[0]}/${categories[0]}?top=${10}&minPrice=${1}&maxPrice=${10000}`)
         fetch(`http://localhost:9876/products/${companies[0]}/${categories[0]}?top=${10}&minPrice=${1}&maxPrice=${10000}`)
             .then(res => res.json())
