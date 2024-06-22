@@ -6,7 +6,7 @@ const cors = require("cors");
 app.use(cors());
 let numbersStore = [];
 const updateStore = (newNumbers) => {
-    console.log(newNumbers);
+  console.log(newNumbers);
   newNumbers.forEach((number) => {
     if (!numbersStore.includes(number)) {
       if (numbersStore.length >= WINDOW_SIZE) {
@@ -64,56 +64,65 @@ app.get("/auth", (req, res) => {
     .then((data) => {
       console.log(data);
       res.send(data);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      res.status(500).send({ error: "Failed to authenticate" });
     });
 });
 
-app.get("/numbers/:id", async(req, res) => {
-    const authorization = await fetch("http://localhost:9876/auth")
-        .then((response) => response.json())
-        .then((data) => {
-            return data.access_token;
-        });
+// Endpoint to get numbers based on the type
+app.get("/numbers/:id", async (req, res) => {
+  try {
+    const authResponse = await fetch("http://localhost:9876/auth");
+    const authData = await authResponse.json();
+    const authorization = authData.access_token;
+
     console.log(authorization);
-  let option;
-  if (req.params.id === "e") {
-    option = "even";
-  } else if (req.params.id === "p") {
-    option = "prime";
-  } else if (req.params.id === "f") {
-    option = "fibonacci";
-  } else if (req.params.id === "r") {
-    option = "random";
-  } else {
-    option = "invalid";
+
+    let option;
+    if (req.params.id === "e") {
+      option = "even";
+    } else if (req.params.id === "p") {
+      option = "prime";
+    } else if (req.params.id === "f") {
+      option = "fibonacci";
+    } else if (req.params.id === "r") {
+      option = "random";
+    } else {
+      option = "invalid";
     }
-    try{
-  fetch(`http://20.244.56.144/test/${option}`, {
-    method: "GET",
-    headers: {
+
+    if (option === "invalid") {
+      res.status(400).send({ error: "Invalid option" });
+      return;
+    }
+
+    const numberResponse = await fetch(`http://20.244.56.144/test/${option}`, {
+      method: "GET",
+      headers: {
         "Content-Type": "application/json",
-        "Authorization": authorization
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-        const windowPrevState = [...numbersStore];
-        console.log(data)
-        const newNumbers = data.numbers;
-        console.log(newNumbers);
-      updateStore(newNumbers);
-      const windowCurrState = [...numbersStore];
-      const average = calculateAverage(numbersStore);
-      res.send({
-        windowPrevState,
-        windowCurrState,
-        newNumbers,
-        average,
-      });
+        Authorization: authorization,
+      },
     });
-    }
-    catch(err){
-        console.log("err");
-    }
+    const numberData = await numberResponse.json();
+    
+    const newNumbers = numberData.numbers;
+    const windowPrevState = [...numbersStore];
+    updateStore(newNumbers);
+    const windowCurrState = [...numbersStore];
+    const average = calculateAverage(numbersStore);
+
+    res.send({
+      windowPrevState,
+      windowCurrState,
+      newNumbers,
+      average,
+    });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send({ error: "Failed to fetch numbers" });
+  }
 });
 
 app.listen(port, () => {
